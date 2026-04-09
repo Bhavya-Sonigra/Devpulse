@@ -1,4 +1,4 @@
-package com.devpulse.devpulse.model.entity;
+package com.devpulse.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

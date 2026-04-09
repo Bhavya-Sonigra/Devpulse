@@ -1,4 +1,4 @@
-package com.devpulse.devpulse.controller;
+package com.devpulse.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

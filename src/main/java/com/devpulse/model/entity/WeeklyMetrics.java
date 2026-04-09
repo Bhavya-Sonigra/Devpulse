@@ -1,4 +1,4 @@
-package com.devpulse.devpulse.model.entity;
+package com.devpulse.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
