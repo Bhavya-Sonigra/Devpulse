@@ -24,3 +24,15 @@ logging:
   level:
     com.devpulse: DEBUG
     org.hibernate.SQL: DEBUG
+
+devpulse:
+  github:
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:local-dev-secret}
+  gemini:
+    api-key: ${GEMINI_API_KEY:your-gemini-key-here}
+    api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+  slack:
+    webhook-url: ${SLACK_WEBHOOK_URL:your-slack-webhook-here}
+  scheduling:
+    analysis-cron: "0 0 2 * * *"
+    report-cron: "0 0 9 * * MON"
