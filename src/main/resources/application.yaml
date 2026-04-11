@@ -3,7 +3,7 @@ spring:
     name: devpulse
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/devpulse
+    url: jdbc:postgresql://localhost:5433/devpulse
     username: devpulse_user
     password: devpulse_pass
     driver-class-name: org.postgresql.Driver
