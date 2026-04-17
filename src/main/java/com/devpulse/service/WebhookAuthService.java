@@ -26,30 +26,24 @@ public class WebhookAuthService {
         log.debug("Validating webhook signature");
 
         if (signatureHeader == null || signatureHeader.isBlank()) {
+            log.warn("Webhook received with no signature header");
             throw new InvalidSignatureException("Missing signature header");
         }
 
-        // 1. Defend against Windows/WSL hidden \r characters in the secret
-        String secret = appConfig.getGithubWebhookSecret().trim();
+        if (!signatureHeader.startsWith(SIGNATURE_PREFIX)) {
+            log.warn("Webhook signature has invalid format: {}", signatureHeader);
+            throw new InvalidSignatureException("Invalid signature format");
+        }
 
-        // 2. NUCLEAR DEBUGGING LOGS
-        log.info("--- WEBHOOK DEBUG ---");
-        log.info("Secret Length: {}", secret.length());
-        log.info("Payload Length: {}", payload.length());
-
-        String receivedHash = signatureHeader.replace(SIGNATURE_PREFIX, "");
-        String computedHash = computeHmacSha256(payload, secret);
-
-        log.info("GitHub Hash   : {}", receivedHash);
-        log.info("Computed Hash : {}", computedHash);
-        log.info("---------------------");
+        String receivedHash = signatureHeader.substring(SIGNATURE_PREFIX.length());
+        String computedHash = computeHmacSha256(payload, appConfig.getGithubWebhookSecret());
 
         if (!constantTimeEquals(receivedHash, computedHash)) {
             log.warn("Webhook signature mismatch - possible spoofing attempt");
             throw new InvalidSignatureException("Signature verification failed");
         }
 
-        log.info("Webhook signature validated successfully");
+        log.debug("Webhook signature validated successfully");
     }
 
     private String computeHmacSha256(String data, String secret) {
