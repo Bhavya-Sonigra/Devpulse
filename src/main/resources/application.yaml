@@ -27,7 +27,7 @@ logging:
 
 devpulse:
   github:
-    webhook-secret: ${GITHUB_WEBHOOK_SECRET:local-dev-secret}
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:test1234}
   gemini:
     api-key: ${GEMINI_API_KEY:your-gemini-key-here}
     api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
