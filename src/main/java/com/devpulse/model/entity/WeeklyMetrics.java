@@ -5,12 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
-
 
 @Entity
 @Table(name = "weekly_metrics")
@@ -19,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WeeklyMetrics {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(updatable = false, nullable = false)
@@ -26,6 +25,12 @@ public class WeeklyMetrics {
 
     @Column(name = "week_start", nullable = false, unique = true)
     private LocalDate weekStart;
+
+    @Column(name = "total_commits", nullable = false)
+    private int totalCommits;
+
+    @Column(name = "prs_opened", nullable = false)
+    private int prsOpened;
 
     @Column(name = "prs_merged", nullable = false)
     private int prsMerged;
@@ -48,10 +53,9 @@ public class WeeklyMetrics {
     @Column(name = "most_changed_file", length = 255)
     private String mostChangedFile;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "commits_by_user", columnDefinition = "jsonb")
+    @Column(name = "commits_by_user", columnDefinition = "text")
     private String commitsByUser;
 
     @Column(name = "computed_at", nullable = false)
-    private java.time.LocalDateTime computedAt;
+    private LocalDateTime computedAt;
 }
