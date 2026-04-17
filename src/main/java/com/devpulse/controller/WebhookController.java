@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api/webhooks")
 @Slf4j
@@ -23,12 +25,15 @@ public class WebhookController {
             @RequestHeader("X-Hub-Signature-256") String signature,
             @RequestHeader("X-GitHub-Event") String eventType,
             @RequestHeader("X-GitHub-Delivery") String deliveryId,
-            @RequestBody String rawPayload) {
+            @RequestBody byte[] rawPayloadBytes) { // <-- Capture exact bytes
 
         log.info("Received GitHub webhook - event: {}, delivery: {}",
                 eventType, deliveryId);
 
         try {
+            // Convert to String using UTF-8 immediately
+            String rawPayload = new String(rawPayloadBytes, StandardCharsets.UTF_8);
+
             webhookAuthService.validateSignature(rawPayload, signature);
             webhookProcessorService.processWebhook(eventType,
                     deliveryId,
@@ -43,6 +48,11 @@ public class WebhookController {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid signature");
+        } catch (Exception e) {
+            log.error("Unexpected error processing webhook", e);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing payload");
         }
     }
 }
