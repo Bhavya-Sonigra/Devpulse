@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: devpulse
 
@@ -27,12 +30,12 @@ logging:
 
 devpulse:
   github:
-    webhook-secret: ${GITHUB_WEBHOOK_SECRET:test1234}
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
   gemini:
-    api-key: ${GEMINI_API_KEY:your-gemini-key-here}
+    api-key: ${GEMINI_API_KEY:}
     api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
   slack:
-    webhook-url: ${SLACK_WEBHOOK_URL:your-slack-webhook-here}
+    webhook-url: ${SLACK_WEBHOOK_URL:}
   scheduling:
     analysis-cron: "0 0 2 * * *"
     report-cron: "0 0 9 * * MON"

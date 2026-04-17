@@ -16,5 +16,7 @@ public interface DeliveryLogRepository extends JpaRepository<DeliveryLog, UUID> 
 
     List<DeliveryLog> findByStatus(String status);
 
+    List<DeliveryLog> findTop100ByOrderByDeliveredAtDesc();
+
     boolean existsByReportWeekAndStatus(LocalDate reportWeek, String status);
 }

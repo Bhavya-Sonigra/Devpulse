@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -22,11 +21,21 @@ public class SlackDeliveryService {
     private final RestTemplate restTemplate;
     private final DeliveryLogRepository deliveryLogRepository;
 
-    public void deliver(String report, LocalDate reportWeek) {
+    public DeliveryLog deliver(String report, LocalDate reportWeek) {
         log.info("Delivering report to Slack for week: {}", reportWeek);
 
         String status;
         String errorMessage = null;
+        String webhookUrl = appConfig.getSlackWebhookUrl() == null
+                ? ""
+                : appConfig.getSlackWebhookUrl().trim();
+
+        if (webhookUrl.isBlank() || !webhookUrl.startsWith("http")) {
+            status = "FAILED";
+            errorMessage = "Slack webhook URL is missing or invalid";
+            log.error(errorMessage);
+            return saveDeliveryLog(report, reportWeek, status, errorMessage);
+        }
 
         try {
             String payload = "{\"text\": \""
@@ -41,7 +50,7 @@ public class SlackDeliveryService {
                     new HttpEntity<>(payload, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    appConfig.getSlackWebhookUrl(),
+                    webhookUrl,
                     HttpMethod.POST,
                     request,
                     String.class);
@@ -62,31 +71,33 @@ public class SlackDeliveryService {
             errorMessage = e.getMessage();
         }
 
-        saveDeliveryLog(report, reportWeek, status, errorMessage);
+        return saveDeliveryLog(report, reportWeek, status, errorMessage);
     }
 
-    private void saveDeliveryLog(String report,
-                                 LocalDate reportWeek,
-                                 String status,
-                                 String errorMessage) {
+    private DeliveryLog saveDeliveryLog(String report,
+                                        LocalDate reportWeek,
+                                        String status,
+                                        String errorMessage) {
         try {
-            String preview = report.length() > 200
-                    ? report.substring(0, 200) + "..."
-                    : report;
+            String safeReport = report == null ? "" : report;
+            String preview = safeReport.length() > 200
+                    ? safeReport.substring(0, 200) + "..."
+                    : safeReport;
 
             DeliveryLog log2 = DeliveryLog.builder()
                     .reportWeek(reportWeek)
                     .deliveredAt(LocalDateTime.now())
-                    .channel(appConfig.getSlackWebhookUrl())
+                    .channel("slack")
                     .status(status)
                     .errorMessage(errorMessage)
                     .reportPreview(preview)
                     .build();
 
-            deliveryLogRepository.save(log2);
+            return deliveryLogRepository.save(log2);
 
         } catch (Exception e) {
             log.error("Failed to save delivery log", e);
+            return null;
         }
     }
 }

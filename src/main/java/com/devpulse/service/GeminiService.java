@@ -26,6 +26,15 @@ public class GeminiService {
         log.info("Generating report via Gemini for week: {}",
                 metrics.getWeekStart());
 
+        String apiKey = appConfig.getGeminiApiKey() == null
+                ? ""
+                : appConfig.getGeminiApiKey().trim();
+
+        if (apiKey.isBlank()) {
+            log.warn("Gemini API key is missing - report generation skipped");
+            return null;
+        }
+
         String prompt = buildPrompt(metrics);
         String requestBody = buildRequestBody(prompt);
 
@@ -33,7 +42,7 @@ public class GeminiService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         String urlWithKey = appConfig.getGeminiApiUrl()
-                + "?key=" + appConfig.getGeminiApiKey();
+                + "?key=" + apiKey;
 
         HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 

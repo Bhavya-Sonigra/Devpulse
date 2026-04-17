@@ -10,6 +10,7 @@ import com.devpulse.scheduler.AnalysisScheduler;
 import com.devpulse.scheduler.ReportScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,7 +58,7 @@ public class MetricsController {
     @GetMapping("/deliveries")
     public ResponseEntity<List<DeliveryLog>> getDeliveries() {
         List<DeliveryLog> logs = deliveryLogRepository
-                .findByStatus("SUCCESS");
+                .findTop100ByOrderByDeliveredAtDesc();
         return ResponseEntity.ok(logs);
     }
 
@@ -65,8 +66,16 @@ public class MetricsController {
     public ResponseEntity<String> triggerReport() {
         log.info("Manual report trigger requested");
         try {
-            reportScheduler.runWeeklyReport();
-            return ResponseEntity.ok("Report triggered successfully");
+            ReportScheduler.ReportRunResult result = reportScheduler
+                    .runWeeklyReport();
+
+            if (result.successLike()) {
+                return ResponseEntity.ok(result.message());
+            }
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(result.message());
         } catch (Exception e) {
             log.error("Manual report trigger failed", e);
             return ResponseEntity.internalServerError()
