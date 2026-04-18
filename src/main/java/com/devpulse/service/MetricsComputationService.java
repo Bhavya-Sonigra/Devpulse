@@ -48,6 +48,7 @@ public class MetricsComputationService {
 
         if (weeklyMetricsRepository.existsByWeekStart(weekStart)) {
             log.info("Metrics already computed for week: {}", weekStart);
+            markEventsProcessed(events);
             return;
         }
 
