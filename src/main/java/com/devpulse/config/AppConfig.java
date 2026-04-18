@@ -17,6 +17,6 @@ public class AppConfig {
     @Value("${devpulse.gemini.api-url}")
     private String geminiApiUrl;
 
-    @Value("${devpulse.slack.webhook-url}")
+    @Value("${devpulse.slack.webhook-url:}")
     private String slackWebhookUrl;
 }
