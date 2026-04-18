@@ -84,38 +84,42 @@ public class GeminiService {
 
     private String buildPrompt(WeeklyMetrics metrics) {
         return String.format("""
-                You are writing a Monday morning team update for a software development team.
-                Write a concise, friendly 3-paragraph message based on this weekly data.
-                Highlight the biggest wins, flag anything concerning, end with encouragement.
-                Keep it under 200 words. Use plain text only, no markdown, no bullet points.
-                                
-                Week of: %s
-                Total commits: %d
-                PRs opened: %d
-                PRs merged: %d
-                PRs still open: %d
-                Average PR review time: %s hours
-                Top contributor: %s
-                Bug fixes: %d
-                New features: %d
-                Most changed file: %s
-                Commits by person: %s
-                """,
+            You are writing a weekly engineering digest for a software team.
+            Write exactly 2 paragraphs. Plain text only, no markdown, no bullet points.
+            Be factual and professional like an internal engineering newsletter.
+            Do not give advice, directives, or tell the team what to do.
+            Do not use phrases like "this week we need to" or "the team should".
+            No motivational language. No filler sentences. Just report the facts clearly.
+            Under 120 words total.
+
+            Paragraph 1: Summarise commit activity — total commits, who contributed and what they touched.
+            Paragraph 2: Summarise PR activity — opened, merged, still open, average review time if available.
+
+            Data:
+            Week of: %s
+            Total commits: %d
+            Top contributor: %s
+            Most changed file: %s
+            Commits by person: %s
+            Bug fixes: %d | New features: %d
+            PRs opened: %d | PRs merged: %d | PRs still open: %d
+            Avg PR review time: %s hours
+            """,
                 metrics.getWeekStart(),
                 metrics.getTotalCommits(),
+                metrics.getTopContributor() != null
+                        ? metrics.getTopContributor() : "N/A",
+                metrics.getMostChangedFile() != null
+                        ? metrics.getMostChangedFile() : "N/A",
+                metrics.getCommitsByUser() != null
+                        ? metrics.getCommitsByUser() : "{}",
+                metrics.getBugFixCount(),
+                metrics.getFeatureCount(),
                 metrics.getPrsOpened(),
                 metrics.getPrsMerged(),
                 metrics.getPrsStillOpen(),
                 metrics.getAvgPrOpenHours() != null
-                        ? metrics.getAvgPrOpenHours() : "N/A",
-                metrics.getTopContributor() != null
-                        ? metrics.getTopContributor() : "N/A",
-                metrics.getBugFixCount(),
-                metrics.getFeatureCount(),
-                metrics.getMostChangedFile() != null
-                        ? metrics.getMostChangedFile() : "N/A",
-                metrics.getCommitsByUser() != null
-                        ? metrics.getCommitsByUser() : "{}");
+                        ? metrics.getAvgPrOpenHours() : "N/A");
     }
 
     private String buildRequestBody(String prompt) {

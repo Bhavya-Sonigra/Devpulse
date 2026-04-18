@@ -33,9 +33,9 @@ devpulse:
     webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
   gemini:
     api-key: ${GEMINI_API_KEY:your-gemini-api-key}
-    api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+    api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
 
-    slack:
+  slack:
     webhook-url: ${SLACK_WEBHOOK_URL:your-slack-webhook-url}
   scheduling:
     analysis-cron: "0 0 2 * * *"
