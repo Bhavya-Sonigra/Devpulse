@@ -3,12 +3,12 @@ package com.devpulse.service;
 import com.devpulse.config.AppConfig;
 import com.devpulse.model.entity.WeeklyMetrics;
 import com.devpulse.model.payload.GeminiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -23,17 +23,16 @@ public class GeminiService {
     private final ObjectMapper objectMapper;
 
     public String generateReport(WeeklyMetrics metrics) {
-        log.info("Generating report via Gemini for week: {}",
-                metrics.getWeekStart());
+        String apiKey = appConfig.getGeminiApiKey().trim();
+        String apiUrl = appConfig.getGeminiApiUrl().trim();
 
-        String apiKey = appConfig.getGeminiApiKey() == null
-                ? ""
-                : appConfig.getGeminiApiKey().trim();
-
-        if (apiKey.isBlank()) {
-            log.warn("Gemini API key is missing - report generation skipped");
+        if (apiKey.isBlank() || apiKey.equals("your-gemini-key-here")) {
+            log.error("Gemini API key is not configured properly");
             return null;
         }
+
+        log.info("Calling Gemini API for week: {}", metrics.getWeekStart());
+        log.debug("Using API URL: {}", apiUrl);
 
         String prompt = buildPrompt(metrics);
         String requestBody = buildRequestBody(prompt);
@@ -41,9 +40,7 @@ public class GeminiService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        String urlWithKey = appConfig.getGeminiApiUrl()
-                + "?key=" + apiKey;
-
+        String urlWithKey = apiUrl + "?key=" + apiKey;
         HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
         try {
@@ -53,12 +50,17 @@ public class GeminiService {
                     request,
                     String.class);
 
+            log.info("Gemini API responded with status: {}",
+                    response.getStatusCode());
+
             if (!response.getStatusCode().is2xxSuccessful()
                     || response.getBody() == null) {
-                log.error("Gemini API returned non-200: {}",
-                        response.getStatusCode());
+                log.error("Gemini returned bad response: {} | body: {}",
+                        response.getStatusCode(), response.getBody());
                 return null;
             }
+
+            log.debug("Gemini raw response: {}", response.getBody());
 
             GeminiResponse geminiResponse = objectMapper
                     .readValue(response.getBody(), GeminiResponse.class);
@@ -66,16 +68,16 @@ public class GeminiService {
             String text = geminiResponse.extractText();
 
             if (text == null || text.isBlank()) {
-                log.error("Gemini response contained no text");
+                log.error("Gemini extractText returned empty — raw body: {}",
+                        response.getBody());
                 return null;
             }
 
-            log.info("Report generated successfully - {} chars",
-                    text.length());
-            return text;
+            log.info("Gemini generated report — {} chars", text.length());
+            return text.trim();
 
         } catch (Exception e) {
-            log.error("Failed to call Gemini API", e);
+            log.error("Gemini API call failed: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -83,9 +85,9 @@ public class GeminiService {
     private String buildPrompt(WeeklyMetrics metrics) {
         return String.format("""
                 You are writing a Monday morning team update for a software development team.
-                Write a concise, friendly message based on this data.
+                Write a concise, friendly 3-paragraph message based on this weekly data.
                 Highlight the biggest wins, flag anything concerning, end with encouragement.
-                Keep it under 200 words. Use plain text, no markdown, no bullet points.
+                Keep it under 200 words. Use plain text only, no markdown, no bullet points.
                                 
                 Week of: %s
                 Total commits: %d

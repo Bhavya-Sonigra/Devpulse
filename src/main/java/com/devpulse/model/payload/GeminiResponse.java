@@ -19,6 +19,9 @@ public class GeminiResponse {
 
         @JsonProperty("content")
         private Content content;
+
+        @JsonProperty("finishReason")
+        private String finishReason;
     }
 
     @Data
@@ -27,6 +30,9 @@ public class GeminiResponse {
 
         @JsonProperty("parts")
         private List<Part> parts;
+
+        @JsonProperty("role")
+        private String role;
     }
 
     @Data
@@ -38,16 +44,19 @@ public class GeminiResponse {
     }
 
     public String extractText() {
-        if (candidates == null || candidates.isEmpty()) {
+        try {
+            if (candidates == null || candidates.isEmpty()) {
+                return null;
+            }
+            Candidate first = candidates.get(0);
+            if (first.getContent() == null) return null;
+            if (first.getContent().getParts() == null
+                    || first.getContent().getParts().isEmpty()) {
+                return null;
+            }
+            return first.getContent().getParts().get(0).getText();
+        } catch (Exception e) {
             return null;
         }
-        if (candidates.get(0).getContent() == null) {
-            return null;
-        }
-        if (candidates.get(0).getContent().getParts() == null ||
-                candidates.get(0).getContent().getParts().isEmpty()) {
-            return null;
-        }
-        return candidates.get(0).getContent().getParts().get(0).getText();
     }
 }

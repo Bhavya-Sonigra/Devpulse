@@ -7,14 +7,14 @@ import com.devpulse.repository.DeliveryLogRepository;
 import com.devpulse.repository.RawEventRepository;
 import com.devpulse.repository.WeeklyMetricsRepository;
 import com.devpulse.scheduler.AnalysisScheduler;
-import com.devpulse.scheduler.ReportScheduler;
 import lombok.RequiredArgsConstructor;
+import com.devpulse.scheduler.ReportScheduler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -33,7 +33,6 @@ public class MetricsController {
     public ResponseEntity<WeeklyMetrics> getLatestMetrics() {
         List<WeeklyMetrics> metrics = weeklyMetricsRepository
                 .findByWeekStartAfter(LocalDate.now().minusDays(7));
-
         if (metrics.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -51,14 +50,13 @@ public class MetricsController {
     public ResponseEntity<List<RawEvent>> getRecentEvents() {
         List<RawEvent> events = rawEventRepository
                 .findByProcessedFalseAndReceivedAtAfter(
-                        java.time.LocalDateTime.now().minusHours(24));
+                        LocalDateTime.now().minusHours(24));
         return ResponseEntity.ok(events);
     }
 
     @GetMapping("/deliveries")
     public ResponseEntity<List<DeliveryLog>> getDeliveries() {
-        List<DeliveryLog> logs = deliveryLogRepository
-                .findTop100ByOrderByDeliveredAtDesc();
+        List<DeliveryLog> logs = deliveryLogRepository.findAll();
         return ResponseEntity.ok(logs);
     }
 
@@ -66,16 +64,8 @@ public class MetricsController {
     public ResponseEntity<String> triggerReport() {
         log.info("Manual report trigger requested");
         try {
-            ReportScheduler.ReportRunResult result = reportScheduler
-                    .runWeeklyReport();
-
-            if (result.successLike()) {
-                return ResponseEntity.ok(result.message());
-            }
-
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(result.message());
+            reportScheduler.runWeeklyReport();
+            return ResponseEntity.ok("Report triggered successfully");
         } catch (Exception e) {
             log.error("Manual report trigger failed", e);
             return ResponseEntity.internalServerError()
