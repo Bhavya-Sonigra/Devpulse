@@ -24,13 +24,9 @@ class WebhookAuthServiceTest {
     private static final String SECRET = "test-secret";
     private static final String PAYLOAD = "{\"ref\":\"refs/heads/main\"}";
 
-    @BeforeEach
-    void setUp() {
-        when(appConfig.getGithubWebhookSecret()).thenReturn(SECRET);
-    }
-
     @Test
     void validSignature_shouldNotThrow() {
+        when(appConfig.getGithubWebhookSecret()).thenReturn(SECRET);
         String validSignature = computeSignature(PAYLOAD, SECRET);
         assertDoesNotThrow(() ->
                 webhookAuthService.validateSignature(PAYLOAD, validSignature));
@@ -38,6 +34,7 @@ class WebhookAuthServiceTest {
 
     @Test
     void invalidSignature_shouldThrowInvalidSignatureException() {
+        when(appConfig.getGithubWebhookSecret()).thenReturn(SECRET);
         assertThrows(InvalidSignatureException.class, () ->
                 webhookAuthService.validateSignature(
                         PAYLOAD, "sha256=invalidsignature"));

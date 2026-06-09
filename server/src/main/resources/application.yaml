@@ -6,9 +6,9 @@ spring:
     name: devpulse
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/devpulse
+    url: jdbc:postgresql://localhost:5432/devpulse?options=-c%20timezone=Asia/Kolkata
     username: devpulse_user
-    password: devpulse_pass
+    password: bhavya
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,6 +19,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        time_zone: Asia/Kolkata
 
 server:
   port: 8080
