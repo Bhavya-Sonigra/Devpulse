@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -30,57 +31,70 @@ public class MetricsController {
     private final ReportScheduler reportScheduler;
 
     @GetMapping("/metrics/latest")
-    public ResponseEntity<WeeklyMetrics> getLatestMetrics() {
+    public ResponseEntity<WeeklyMetrics> getLatestMetrics(@RequestAttribute("teamId") String teamId) {
+        UUID teamUuid = UUID.fromString(teamId);
         List<WeeklyMetrics> metrics = weeklyMetricsRepository
-                .findByWeekStartAfter(LocalDate.now().minusDays(7));
+                .findByTeamIdAndWeekStartAfter(teamUuid, LocalDate.now().minusDays(7));
         if (metrics.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            log.info("No metrics found for team: {}", teamId);
+            return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(metrics.get(0));
+        WeeklyMetrics latest = metrics.stream()
+                .max((m1, m2) -> m1.getWeekStart().compareTo(m2.getWeekStart()))
+                .orElse(null);
+        return ResponseEntity.ok(latest);
     }
 
     @GetMapping("/metrics/history")
-    public ResponseEntity<List<WeeklyMetrics>> getMetricsHistory() {
+    public ResponseEntity<List<WeeklyMetrics>> getMetricsHistory(@RequestAttribute("teamId") String teamId) {
+        UUID teamUuid = UUID.fromString(teamId);
         List<WeeklyMetrics> all = weeklyMetricsRepository
-                .findByWeekStartAfter(LocalDate.now().minusDays(90));
+                .findByTeamIdAndWeekStartAfter(teamUuid, LocalDate.now().minusDays(90));
+        log.info("Fetched {} metric records for team: {}", all.size(), teamId);
         return ResponseEntity.ok(all);
     }
 
     @GetMapping("/events/recent")
-    public ResponseEntity<List<RawEvent>> getRecentEvents() {
+    public ResponseEntity<List<RawEvent>> getRecentEvents(@RequestAttribute("teamId") String teamId) {
+        UUID teamUuid = UUID.fromString(teamId);
         List<RawEvent> events = rawEventRepository
-                .findByProcessedFalseAndReceivedAtAfter(
-                        LocalDateTime.now().minusHours(24));
+                .findByTeamIdAndProcessedFalseAndReceivedAtAfter(
+                        teamUuid, LocalDateTime.now().minusHours(24));
         return ResponseEntity.ok(events);
     }
 
     @GetMapping("/deliveries")
-    public ResponseEntity<List<DeliveryLog>> getDeliveries() {
-        List<DeliveryLog> logs = deliveryLogRepository.findAll();
+    public ResponseEntity<List<DeliveryLog>> getDeliveries(@RequestAttribute("teamId") String teamId) {
+        // Get the 20 most recent delivery logs
+        List<DeliveryLog> logs = deliveryLogRepository.findTop100ByOrderByDeliveredAtDesc();
+        if (logs.size() > 20) {
+            logs = logs.subList(0, 20);
+        }
+        log.info("Fetched {} delivery logs for team: {}", logs.size(), teamId);
         return ResponseEntity.ok(logs);
     }
 
     @PostMapping("/report/trigger")
-    public ResponseEntity<String> triggerReport() {
-        log.info("Manual report trigger requested");
+    public ResponseEntity<String> triggerReport(@RequestAttribute("teamId") String teamId) {
+        log.info("Manual report trigger requested for team: {}", teamId);
         try {
             reportScheduler.runWeeklyReport();
             return ResponseEntity.ok("Report triggered successfully");
         } catch (Exception e) {
-            log.error("Manual report trigger failed", e);
+            log.error("Manual report trigger failed for team: {}", teamId, e);
             return ResponseEntity.internalServerError()
                     .body("Report trigger failed: " + e.getMessage());
         }
     }
 
     @PostMapping("/analysis/trigger")
-    public ResponseEntity<String> triggerAnalysis() {
-        log.info("Manual analysis trigger requested");
+    public ResponseEntity<String> triggerAnalysis(@RequestAttribute("teamId") String teamId) {
+        log.info("Manual analysis trigger requested for team: {}", teamId);
         try {
             analysisScheduler.runNightlyAnalysis();
             return ResponseEntity.ok("Analysis triggered successfully");
         } catch (Exception e) {
-            log.error("Manual analysis trigger failed", e);
+            log.error("Manual analysis trigger failed for team: {}", teamId, e);
             return ResponseEntity.internalServerError()
                     .body("Analysis trigger failed: " + e.getMessage());
         }

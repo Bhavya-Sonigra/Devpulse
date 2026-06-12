@@ -6,9 +6,9 @@ spring:
     name: devpulse
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/devpulse?options=-c%20timezone=Asia/Kolkata
-    username: devpulse_user
-    password: bhavya
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/devpulse?options=-c%20timezone=Asia/Kolkata}
+    username: ${SPRING_DATASOURCE_USERNAME:devpulse_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -30,6 +30,10 @@ logging:
     org.hibernate.SQL: DEBUG
 
 devpulse:
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  jwt:
+    secret: ${JWT_SECRET:}
   github:
     webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
   gemini:
@@ -38,6 +42,8 @@ devpulse:
 
   slack:
     webhook-url: ${SLACK_WEBHOOK_URL:your-slack-webhook-url}
+    client-id: ${SLACK_CLIENT_ID:}
+    client-secret: ${SLACK_CLIENT_SECRET:}
   scheduling:
     analysis-cron: "0 0 2 * * *"
     report-cron: "0 0 9 * * MON"

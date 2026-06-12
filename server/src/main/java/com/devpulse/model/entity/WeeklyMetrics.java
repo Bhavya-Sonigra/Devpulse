@@ -23,7 +23,10 @@ public class WeeklyMetrics {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "week_start", nullable = false, unique = true)
+    @Column(name = "team_id", nullable = false)
+    private UUID teamId;
+
+    @Column(name = "week_start", nullable = false)
     private LocalDate weekStart;
 
     @Column(name = "total_commits", nullable = false)

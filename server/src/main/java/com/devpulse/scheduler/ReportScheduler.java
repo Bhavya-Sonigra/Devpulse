@@ -34,7 +34,9 @@ public class ReportScheduler {
             return;
         }
 
-        WeeklyMetrics metrics = recentMetrics.get(0);
+        WeeklyMetrics metrics = recentMetrics.stream()
+                .max(java.util.Comparator.comparing(WeeklyMetrics::getWeekStart))
+                .orElse(recentMetrics.get(0));
 
         String report = geminiService.generateReport(metrics);
 

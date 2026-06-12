@@ -24,6 +24,7 @@ public class AnalysisScheduler {
         log.info("Nightly analysis job started at {}",
                 LocalDateTime.now());
 
+        // Note: AnalysisScheduler currently runs globally; team isolation handled inside MetricsComputationService
         List<RawEvent> unprocessedEvents = rawEventRepository
                 .findByProcessedFalseAndReceivedAtAfter(
                         LocalDateTime.now().minusHours(24));

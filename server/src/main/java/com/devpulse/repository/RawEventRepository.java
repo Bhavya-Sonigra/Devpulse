@@ -12,9 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RawEventRepository extends JpaRepository<RawEvent, Long> {
+public interface RawEventRepository extends JpaRepository<RawEvent, UUID> {
     Optional<RawEvent> findByDeliveryId(String deliveryId);
+    List<RawEvent> findByTeamIdAndProcessedFalseAndReceivedAtAfter(UUID teamId, LocalDateTime since);
     List<RawEvent> findByProcessedFalseAndReceivedAtAfter(LocalDateTime since);
+    long countByProcessedTrue();
+    long countByProcessedFalse();
 
     @Modifying
     @Query("update RawEvent r set r.processed = true where r.id IN :ids")

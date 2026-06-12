@@ -19,4 +19,13 @@ public class AppConfig {
 
     @Value("${devpulse.slack.webhook-url:}")
     private String slackWebhookUrl;
+
+    @Value("${devpulse.slack.client-id:}")
+    private String slackClientId;
+
+    @Value("${devpulse.slack.client-secret:}")
+    private String slackClientSecret;
+
+    @Value("${devpulse.jwt.secret}")
+    private String jwtSecret;
 }

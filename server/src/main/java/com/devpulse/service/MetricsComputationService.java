@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -46,48 +47,58 @@ public class MetricsComputationService {
         LocalDate weekStart = LocalDate.now()
                 .with(java.time.DayOfWeek.MONDAY);
 
-        if (weeklyMetricsRepository.existsByWeekStart(weekStart)) {
-            log.info("Metrics already computed for week: {}", weekStart);
-            markEventsProcessed(events);
-            return;
+        // Group events by team and process each team separately
+        Map<UUID, List<RawEvent>> eventsByTeam = events.stream()
+                .filter(e -> e.getTeamId() != null)
+                .collect(Collectors.groupingBy(RawEvent::getTeamId));
+
+        for (Map.Entry<UUID, List<RawEvent>> entry : eventsByTeam.entrySet()) {
+            UUID currentTeamId = entry.getKey();
+            List<RawEvent> teamEvents = entry.getValue();
+
+            if (weeklyMetricsRepository.existsByTeamIdAndWeekStart(currentTeamId, weekStart)) {
+                log.info("Metrics already computed for team {} week: {}", currentTeamId, weekStart);
+                markEventsProcessed(teamEvents);
+                continue;
+            }
+
+            List<RawEvent> pushEvents = filterByType(teamEvents, EVENT_PUSH);
+            List<RawEvent> prEvents = filterByType(teamEvents, EVENT_PULL_REQUEST);
+
+            int totalCommits = countTotalCommits(pushEvents);
+            Map<String, Integer> commitsByUser = countCommitsByUser(pushEvents);
+            String topContributor = findTopContributor(commitsByUser);
+            String mostChangedFile = findMostChangedFile(pushEvents);
+            int bugFixCount = countByKeywords(pushEvents, BUG_KEYWORDS);
+            int featureCount = countByKeywords(pushEvents, FEATURE_KEYWORDS);
+
+            int prsOpened = countPrsOpened(prEvents);
+            int prsMerged = countPrsMerged(prEvents);
+            int prsStillOpen = countPrsStillOpen(prEvents);
+            Double avgPrOpenHours = computeAvgPrOpenHours(prEvents);
+
+            WeeklyMetrics metrics = WeeklyMetrics.builder()
+                    .teamId(currentTeamId)
+                    .weekStart(weekStart)
+                    .totalCommits(totalCommits)
+                    .commitsByUser(mapToJson(commitsByUser))
+                    .topContributor(topContributor)
+                    .mostChangedFile(mostChangedFile)
+                    .bugFixCount(bugFixCount)
+                    .featureCount(featureCount)
+                    .prsOpened(prsOpened)
+                    .prsMerged(prsMerged)
+                    .prsStillOpen(prsStillOpen)
+                    .avgPrOpenHours(avgPrOpenHours)
+                    .computedAt(LocalDateTime.now())
+                    .build();
+
+            weeklyMetricsRepository.save(metrics);
+            markEventsProcessed(teamEvents);
+
+            log.info("Metrics saved for team {} week {} — {} commits, {} PRs merged",
+                    currentTeamId, weekStart, totalCommits, prsMerged);
         }
-
-        List<RawEvent> pushEvents = filterByType(events, EVENT_PUSH);
-        List<RawEvent> prEvents = filterByType(events, EVENT_PULL_REQUEST);
-
-        int totalCommits = countTotalCommits(pushEvents);
-        Map<String, Integer> commitsByUser = countCommitsByUser(pushEvents);
-        String topContributor = findTopContributor(commitsByUser);
-        String mostChangedFile = findMostChangedFile(pushEvents);
-        int bugFixCount = countByKeywords(pushEvents, BUG_KEYWORDS);
-        int featureCount = countByKeywords(pushEvents, FEATURE_KEYWORDS);
-
-        int prsOpened = countPrsOpened(prEvents);
-        int prsMerged = countPrsMerged(prEvents);
-        int prsStillOpen = countPrsStillOpen(prEvents);
-        Double avgPrOpenHours = computeAvgPrOpenHours(prEvents);
-
-        WeeklyMetrics metrics = WeeklyMetrics.builder()
-                .weekStart(weekStart)
-                .totalCommits(totalCommits)
-                .commitsByUser(mapToJson(commitsByUser))
-                .topContributor(topContributor)
-                .mostChangedFile(mostChangedFile)
-                .bugFixCount(bugFixCount)
-                .featureCount(featureCount)
-                .prsOpened(prsOpened)
-                .prsMerged(prsMerged)
-                .prsStillOpen(prsStillOpen)
-                .avgPrOpenHours(avgPrOpenHours)
-                .computedAt(LocalDateTime.now())
-                .build();
-
-        weeklyMetricsRepository.save(metrics);
-
-        markEventsProcessed(events);
-
-        log.info("Metrics saved for week {} — {} commits, {} PRs merged",
-                weekStart, totalCommits, prsMerged);
     }
 
     private List<RawEvent> filterByType(List<RawEvent> events,

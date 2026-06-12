@@ -24,6 +24,9 @@ public class RawEvent {
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType;
 
+    @Column(name = "team_id")
+    private UUID teamId;
+
     @Column(name = "repo_name", nullable = false, length = 255)
     private String repoName;
 

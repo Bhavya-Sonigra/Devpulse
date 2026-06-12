@@ -12,9 +12,10 @@ import java.util.UUID;
 @Repository
 public interface WeeklyMetricsRepository extends JpaRepository<WeeklyMetrics, UUID> {
 
-    Optional<WeeklyMetrics> findByWeekStart(LocalDate weekStart);
+    Optional<WeeklyMetrics> findByTeamIdAndWeekStart(UUID teamId, LocalDate weekStart);
 
+    List<WeeklyMetrics> findByTeamIdAndWeekStartAfter(UUID teamId, LocalDate since);
     List<WeeklyMetrics> findByWeekStartAfter(LocalDate since);
 
-    boolean existsByWeekStart(LocalDate weekStart);
+    boolean existsByTeamIdAndWeekStart(UUID teamId, LocalDate weekStart);
 }
